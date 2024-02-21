@@ -1,57 +1,61 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const nodemailer = require('nodemailer');
-const dotenv = require('dotenv'); // it helps us to manage enviroment variables(which basically consistes of sensitive data) in a secure way.
- 
 const app = express();
-const port = 3000;
-//require('dotenv').config();
- 
+const port = process.env.PORT || 4000;
+
+//create the middleware for the parsing requested bodies
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+
+//define to the server that the static files are stored inside the public folder.
+
 app.use(express.static('public'));
- 
-//middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}));
- 
-//const route = express.Router();
- 
-//ceate reusable transporter object using the default SMTP transport
-const transporter = nodemailer.createTransport({
-    //port:465,
-    service:'gmail',
-    host: "smtp.gmail.com",
-    auth: {
-        user:'rs6243088@gmail.com',
-        pass:'jnvrknuxnqqxjiko',
-    },
-    secure: true,
+
+//defining the route for home page
+app.get('/',(req,res)=>{
+    res.sendFile(__dirname+'/public/send-email.html');
 });
- 
-app.post('/sendemail',(req,res)=>{
-    const{to,subject,text}=req.body;
-    const mailInfo = {
-        from: 'arpitaroy2089@gmail.com',
+
+
+//configure nodemailer
+const nodemailer = require('nodemailer');
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth:{
+        user: 'rs6243088@gmail.com',
+        pass: 'jnvrknuxnqqxjiko',
+    }
+});
+
+//create the route for the form
+app.post('/send-email',(req,res)=>{
+    const {to, subject,text}=req.body;
+
+    const mailOptions = {
+        from:'rs6243088@gmail.com',
         to,
         subject,
         text,
-        //to: 'arpitaroy2089@gmail.com',
-        //subject: 'Sending email using Express Node Js',
-        //text:'Hurray it was easy application',
-        //html:'<h1>Hello User, We have been successfully able to send an email for the very FIRST time.</h1>',
-        //html:'<h1>Hello User, We have been successfully able to send an email for the SECOND time.</h1>',
     };
- 
-    transporter.sendMail(mailInfo, function(err, info){
-        if(err)
-            return console.log(err);
-        else
-            res.status(200).send({message:"Mail send", message_id:info.message});
+
+    transporter.sendMail(mailOptions,(error,infor)=>{
+        if(error){
+            console.log(error);
+            res.status(500).send('Error in sending mail');
+        }
+        else{
+            console.log('Email Send: '+infor.response);
+            res.send('Email send successfully!');
+        }
     });
+
 });
- 
-//app.use('/a1', route);
- 
-app.listen(port,()=>{
-    console.log(`Server listenting on the port ${port}`);
+
+
+//start ther server
+app.listen (port,()=>{
+    console.log(`server is running on the port ${port}`);
 });
+
+
+
 
